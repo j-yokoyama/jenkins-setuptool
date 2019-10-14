@@ -1,0 +1,54 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+EXEC_NAME=$(basename $0 .sh)
+
+JENKINS_DIR={{ jenkins_home }}
+BACKUP_DIR={{ backup_dir }}
+BACKUP_FILE_NAME=backup_jenkins_$(date '+%Y%m%d_%H%M%S')
+LOG_FILE=${EXEC_NAME}.log
+
+BACKUP_LIMIT_DAY={{ backup_limit_day }} # この値の日数を超えたバックアップファイルを削除
+
+BACKUP_LIST=( \
+"*.xml" \
+"*.key*" \
+)
+
+BACKUP_LIST_DIR=( \
+"./secrets/.*" \
+"./updates/.*" \
+"./users/.*" \
+"./plugins/.*.jpi" \
+"./nodes/.*/config.xml"
+"./jobs/.*/config.xml" \
+)
+
+mkdir -p ${BACKUP_DIR}
+
+echo "[$(date +'%F %T')] start backup jenkins." >> ${SCRIPT_DIR}/${LOG_FILE} 2>&1
+
+cd ${JENKINS_DIR}
+
+set -f # ワイルドカードが不用意に展開されないようにするため。
+
+for target in ${BACKUP_LIST[@]}; do
+    find . -maxdepth 1 -name ${target} | xargs tar rf ${BACKUP_DIR}/${BACKUP_FILE_NAME}.tar >> ${SCRIPT_DIR}/${LOG_FILE} 2>&1
+done
+
+for target in ${BACKUP_LIST_DIR[@]}; do
+    find . -regex ${target} | xargs tar rf ${BACKUP_DIR}/${BACKUP_FILE_NAME}.tar >> ${SCRIPT_DIR}/${LOG_FILE} 2>&1
+done
+
+set +f
+
+gzip ${BACKUP_DIR}/${BACKUP_FILE_NAME}.tar >> ${SCRIPT_DIR}/${LOG_FILE} 2>&1
+
+if [ "${BACKUP_DIR}" = "/" ]; then
+    echo "削除対象ディレクトリが「/」になっています。(BACKUP_DIR=${BACKUP_DIR}）" >> ${SCRIPT_DIR}/${LOG_FILE} 2>&1
+    exit 1
+fi
+
+find ${BACKUP_DIR} -type f -mtime +${BACKUP_LIMIT_DAY} -exec rm -f {} \; >> ${SCRIPT_DIR}/${LOG_FILE} 2>&1
+
+echo "[$(date +'%F %T')] finish backup jenkins." >> ${SCRIPT_DIR}/${LOG_FILE} 2>&1

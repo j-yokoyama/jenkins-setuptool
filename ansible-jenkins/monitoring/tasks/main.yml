@@ -1,0 +1,63 @@
+- name: install metricbeat
+  yum:
+    name: https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.4.0-x86_64.rpm
+    state: present
+
+- name: set kibana url in metricbeat.yml
+  replace: 
+    path: '/etc/metricbeat/metricbeat.yml'
+    regexp: '{{ item.regexp }}'
+    replace: '{{ item.line }}'
+  with_items:
+  - regexp: '#host: ".*:5601"'
+    line:   'host: "{{ kibana_ip }}:5601"'
+  - regexp: 'hosts: \[".*:9200"\]'
+    line:   'hosts: ["{{ elasticsearch_ip }}:9200"]'  
+
+- name: enable docker module
+  command: metricbeat modules enable docker
+  args:
+    creates: /etc/metricbeat/modules.d/docker.yml
+
+- name: enable each metric for docker mondule
+  replace:
+    path: '/etc/metricbeat/modules.d/docker.yml'
+    regexp: '{{ item.regexp }}'
+    replace: '{{ item.line }}'
+  with_items:
+  - regexp: '#metricsets:'
+    line:   'metricsets:'
+  - regexp: '#  - container'
+    line:   '  - container'
+  - regexp: '#  - cpu'
+    line:   '  - cpu'
+  - regexp: '#  - diskio'
+    line:   '  - diskio'
+  - regexp: '#  - event'
+    line:   '  - event'
+  - regexp: '#  - healthcheck'
+    line:   '  - healthcheck'
+  - regexp: '#  - info'
+    line:   '  - info'
+  - regexp: '#  - memory'
+    line:   '  - memory'
+  - regexp: '#  - network'
+    line:   '  - network'
+
+- name: setup metricbeat template
+  shell: "metricbeat setup --template -E output.logstash.enabled=false -E 'output.elasticsearch.hosts=[\"{{ elasticsearch_ip }}:9200\"]' && touch ${HOME}/metricbeat_template_compleated"
+  args:
+    creates: ${HOME}/metricbeat_template_compleated
+  when: "'jenkins-master' in group_names"
+
+- name: setup metricbeat dashboard
+  shell: "metricbeat setup --dashboards && touch ${HOME}/metricbeat_dashboard_compleated"
+  args:
+    creates: ${HOME}/metricbeat_dashboard_compleated
+  when: "'jenkins-master' in group_names"
+
+- name: start and enable metricbeat
+  service:
+    name: metricbeat
+    state: started
+    enabled: yes 

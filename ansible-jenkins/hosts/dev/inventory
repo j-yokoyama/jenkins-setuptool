@@ -1,0 +1,25 @@
+[jenkins-master] # JenkinsのMaster Node
+10.0.0.1
+
+[jenkins-slave] # JenkinsのSlave Node
+10.0.0.2
+10.0.0.3
+
+[jenkins-master:vars]
+# Jenkinsコンテナの/car/jenkins_homeとのホスト側の共有ディレクトリ
+#  ＝ Jenkinsコンテナ内でのdocker実行ユーザのホームディレクトリ
+docker_user_home=/var/lib/jenkins 
+jenkins_home=/var/lib/jenkins
+
+[jenkins-slave:vars]
+# docker実行ユーザディレクトリ
+docker_user_home=/root
+# SlaveのJenkinsディレクトリ
+jenkins_home=/var/lib/jenkins
+
+[monitoring:children]
+jenkins-master
+jenkins-slave
+
+[maintenance:children]
+jenkins-master

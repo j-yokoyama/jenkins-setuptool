@@ -1,0 +1,7 @@
+- hosts: all
+  roles:
+    - jenkins-common
+
+- hosts: jenkins-slave
+  roles:
+    - jenkins-slave

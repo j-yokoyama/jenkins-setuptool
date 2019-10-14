@@ -1,0 +1,23 @@
+version: '3'
+services:
+  jenkins-master:
+    build:
+      context: ./jenkins-master
+      dockerfile: Dockerfile
+      args:
+        DOCKER_GID: ${DOCKER_GID}
+    image: jenkins-docker
+    container_name: jenkins-master
+    restart: always
+    ports:
+      - 8080:8080
+      - 50000:50000
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${JENKINS_HOST_DIR}:/var/jenkins_home
+    networks:
+      - jenkins-network
+
+networks:
+  jenkins-network:
+

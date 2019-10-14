@@ -1,0 +1,3 @@
+proxy: false # Proxy配下の場合は、trueにする。
+proxy_ip: localhost # Proxy配下の場合に、プロキシのIPアドレスを設定
+proxy_port: 8080 # Proxy配下の場合に、プロキシのポートを設定

@@ -1,0 +1,17 @@
+- name: make backup script directory
+  file:
+    path: /root/tools/backup
+    state: directory
+
+- name: set backup script
+  template:
+    src: backup_jenkins.sh.j2
+    dest: /root/tools/backup/backup_jenkins.sh
+    mode: 0755
+
+- name: set backup cron
+  cron:
+    name: backup jenkins
+    minute: 0
+    hour: 0
+    job: "sh /root/tools/backup/backup_jenkins.sh"

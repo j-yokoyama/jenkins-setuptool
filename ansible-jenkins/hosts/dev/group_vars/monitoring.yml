@@ -1,0 +1,4 @@
+kibana_ip: 10.0.1.1 # KibanaのIPアドレス
+kibana_port: 5601 # Kibanaのポート
+elasticsearch_ip: 10.0.1.1 # ElasticsearchのIPアドレス
+elasticsearch_port: 9200 # Elasticsearchのポート

@@ -1,0 +1,106 @@
+- name: install package for docker-ce
+  yum:
+    name: 
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+    state: latest
+
+- name: add docker repository
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    chdir: /etc/yum.repos.d
+    creates: docker-ce.repo
+
+- name: install docker-ce
+  yum:
+    name: docker-ce
+    state: latest
+
+- name: start and enable docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: download docker-compose
+  shell: curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+  args:
+    chdir: /usr/local/bin/
+    creates: docker-compose
+
+- name: chmod docker-compose
+  file:
+    path: /usr/local/bin/docker-compose
+    mode: 0755
+
+# set proxy for docker daemon
+- name: make directory for proxy setting
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+  when: proxy
+
+- name: set proxy for docker daemon
+  template:
+    src: http-proxy.conf.j2
+    dest: /etc/systemd/system/docker.service.d/http-proxy.conf
+  when: proxy
+  notify: daemon reload
+
+- name: delete proxy setting file for docker daemon
+  file:
+    path: /etc/systemd/system/docker.service.d/http-proxy.conf
+    state: absent
+  when: not proxy
+
+- name: delete directory for proxy setting
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: absent
+  when: not proxy
+  notify: daemon reload
+
+# set proxy for docker container
+- name: make directory for docker container
+  file:
+    path: "{{ docker_user_home }}/.docker"
+    state: directory
+  when: proxy
+
+- name: set proxy for docker container
+  template:
+    src: config.json.j2
+    dest: "{{ docker_user_home }}/.docker/config.json"
+  when: proxy
+  notify: restart docker
+
+- name: make directory for docker container
+  file:
+    path: "{{ item.path }}"
+    state: "{{ item.state }}"
+    mode: 0777
+  with_items:
+    - path: "{{ docker_user_home }}"
+      state: directory
+    - path: "{{ docker_user_home }}/.docker"
+      state: directory
+    - path: "{{ docker_user_home }}/.docker/config.json"
+      state: file
+  when: 
+    - proxy
+    - "'jenkins-master' in group_names"
+
+- name: delete proxy setting file for docker container
+  file:
+    path: "{{ docker_user_home }}/.docker/config.json"
+    state: absent
+  when: not proxy
+  register: result_container_not_proxy
+
+- name: delete directory for docker container
+  file:
+    path: "{{ docker_user_home }}/.docker"
+    state: absent
+  when: not proxy
+  notify: restart docker

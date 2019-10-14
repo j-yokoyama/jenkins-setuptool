@@ -1,0 +1,9 @@
+- name: install java
+  yum:
+    name: java
+    state: latest
+
+- name: install git
+  yum:
+    name: git
+    state: latest
