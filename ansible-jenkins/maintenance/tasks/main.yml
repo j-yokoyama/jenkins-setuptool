@@ -3,15 +3,28 @@
     path: /root/tools/backup
     state: directory
 
-- name: set backup script
+- name: set backup script (jenkins setting)
   template:
-    src: backup_jenkins.sh.j2
-    dest: /root/tools/backup/backup_jenkins.sh
+    src: backup_jenkins_setting.sh.j2
+    dest: /root/tools/backup/backup_jenkins_setting.sh
     mode: 0755
 
-- name: set backup cron
+- name: set backup script (jenkins job)
+  template:
+    src: backup_jenkins_job.sh.j2
+    dest: /root/tools/backup/backup_jenkins_job.sh
+    mode: 0755
+
+- name: set backup cron (jenkins setting)
   cron:
-    name: backup jenkins
+    name: backup jenkins setting
     minute: 0
     hour: 0
-    job: "sh /root/tools/backup/backup_jenkins.sh"
+    job: "sh /root/tools/backup/backup_jenkins_setting.sh"
+
+- name: set backup cron (jenkins job)
+  cron:
+    name: backup jenkins job
+    minute: 30
+    hour: 0
+    job: "sh /root/tools/backup/backup_jenkins_job.sh"
